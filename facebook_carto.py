@@ -8,14 +8,11 @@ import facebook
 import requests
 
 class Dataframe:
-    """Get file, create dataframe and return a list of ids
-    Initializes a list of ids"""
-    #quels peuvent-être les attributs de ma class ? une list d'ids? a dataframe ?
+    """Get file, create a dataframe and return a list of ids"""
     pd.set_option("display.max_rows", 16)
     LARGE_FIGSIZE = (12, 8)
 
     def __init__(self, data):
-        #On pourrait imaginer que les données du dataframe puissent être segmentées autrement
         self.dataframe = pd.read_excel(data)
         self.dic_list_ids = []
 
@@ -27,7 +24,7 @@ class Dataframe:
         df_list_posts = pd.DataFrame({"url": list_posts['url'],
                                       "tags": list_posts['tags_internal'],
                                       "content": list_posts['content'],
-                                      "auteur":list_posts['extra_source_attributes_name']})
+                                      "auteur": list_posts['extra_source_attributes_name']})
         regex_comments = r".+isComment.+|isComment|isComment.+|.+isComment"
         df_list_posts = df_list_posts.drop(df_list_posts[df_list_posts['tags'].str.contains(regex_comments)].index)
         return df_list_posts
@@ -43,12 +40,13 @@ class Dataframe:
                                     "auteur": df_list_posts['auteur']})
         self.dic_list_ids = df_list_ids.to_dict(orient='records')
 
-class Facebook:
 
-    """Get a token via Facebook Graph Explorer
-        Améliorer en ajouter la case commentaire
+class Facebook:
     """
-    TOKEN = 'EAACEdEose0cBAJpeiZAcvZC3ILvkVOANgpPARqRSn2E81sKTRs4Q3c2mH1R7UcYOZAVlE9mbHMgh1rwh1iUCj7w9UQSrjiFK9GunZCcmzsLYiwpaeEnq6fyaJ3ZAhDnxN3zwjOYcmXRQrAitaPxqVs8sL8xgj1ZCYLcgjrwtfcwj3SZCaUBAg9dvqrbzX543UUZD'
+    Get a token via Facebook Graph Explorer
+    """
+
+    TOKEN = ''
 
     def __init__(self):
         self.graph = facebook.GraphAPI(access_token=self.TOKEN, version='2.7')
@@ -65,10 +63,12 @@ class Facebook:
             return self.select_connection_name()
 
     def get_engagement(self, list_ids):
-        """For each post id, get all web users's ids who likes the post"""
+        """
+        For each post id, get all ids of web users who liked or commented
+        the post
+        """
         for status in list_ids:
             try:
-                #Ajouter la possibilité de récupérer soit les likes soit les commentaires
                 likes = self.graph.get_connections(id=status['list_ids'],
                                                    connection_name=self.connection_name,
                                                    limit='1000')
@@ -88,16 +88,20 @@ class Facebook:
                 continue
 
     def save_likes_list(self, likes_list):
+        """ Save the list of likes in a pickle file. """
         with open(self.path_to_file, 'wb') as f:
             pkl.dump(likes_list, f)
 
+    @classmethod
     def get_likes_list(self, path_to_file):
+        """ Get the list of likes from the pickle file. """
         with open(path_to_file, 'rb') as f:
             likes_list = pkl.load(f)
         return likes_list
 
-class Graph:
-    """xxx"""
+
+class Network:
+    """Creation of the nodes and the links files"""
     def __init__(self):
         self.nodes = []
         self.links = []
@@ -119,8 +123,8 @@ class Graph:
         likes = pd.DataFrame(likes)
         return likes
 
-class Nodes(Graph):
-    """xxx"""
+class Nodes(Network):
+    """Creation of the nodes"""
     def __init__(self):
         super().__init__()
         self.nodes = []
@@ -144,7 +148,8 @@ class Nodes(Graph):
         list_ids['Label'] = list_ids['Id']
         self.nodes = list_ids
 
-class Links(Graph):
+class Links(Network):
+    """Creation of the links"""
     def __init__(self):
         super().__init__()
         self.links = []
